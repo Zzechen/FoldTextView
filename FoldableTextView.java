@@ -39,6 +39,7 @@ import android.widget.TextView;
 public class FoldableTextView extends TextView {
     public static final int COLOR_FOLD = Color.BLUE;
     public static final int LINE_DEFAULT = 3;
+    public static final String ELLIPSIS_STRING = "...";
     private TextPaint mPaint;
     private Rect mFoldMargins;
     private String mFoldText, mTextFold, mTextUnfold;
@@ -166,15 +167,29 @@ public class FoldableTextView extends TextView {
             float v = mPaint.measureText(mFoldText, 0, mFoldText.length());
             int measuredWidth = getMeasuredWidth();
             int width = getWidth();
+            float dWidth = mPaint.measureText("...", 0, "...".length());
             int paddingLeft = getPaddingLeft();
             int paddingRight = getPaddingRight();
-            int avail = (int) ((measuredWidth - paddingLeft - paddingRight) * mFoldLine - v);
-            CharSequence charSequence = mOriginText;
+            int lineWidth = measuredWidth - paddingLeft - paddingRight;
+            CharSequence charSequence = "";
+            StringBuilder sb = new StringBuilder();
             if (mIsFolded) {
-                charSequence = TextUtils.ellipsize(mOriginText, getPaint(), avail, null);
+                for (int i = 1; i <= mFoldLine; i++) {
+                    charSequence = mOriginText.subSequence(charSequence.length() != 0 ? charSequence.length() : 0, mOriginText.length());
+                    charSequence = TextUtils.ellipsize(charSequence, getPaint(), i == mFoldLine ? lineWidth - v : lineWidth, TextUtils.TruncateAt.END);
+                    String normal = ELLIPSIS_STRING;
+                    boolean contains = charSequence.toString().contains(normal);
+                    if (i != mFoldLine && contains) {
+                        charSequence = charSequence.toString().substring(0, charSequence.length() - 3);
+//                        sb.append(mOriginText.subSequence(sb.length() - 1, sb.length() + 3));
+                    }
+                    sb.append(charSequence);
+                }
+            } else {
+                sb.append(mOriginText);
             }
-            SpannableString ss = new SpannableString(charSequence + mFoldText);
-            ss.setSpan(new FoldClickableSpan(), charSequence.length(), ss.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            SpannableString ss = new SpannableString(sb + mFoldText);
+            ss.setSpan(new FoldClickableSpan(), sb.length(), ss.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             superText(ss, type);
             return;
         }
@@ -198,6 +213,7 @@ public class FoldableTextView extends TextView {
         public void updateDrawState(TextPaint ds) {
 //            ds.setUnderlineText(true);
             ds.setColor(mFoldColor);
+            ds.setTextSize(mFoldSize);
         }
 
         @Override
